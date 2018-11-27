@@ -12,17 +12,21 @@ import twitter_info # still need this in the same directory, filled out
 # all tweets that mention "umsi"
 # It takes as input the api object, the cache dictionary, and the cache file name
 # It caches the data and will use the cached data if it exists
+
+
 def get_tweets(api, cacheDict, fname):
-	#hey hey hey hey 
+	
 
     # if the data is in the dictionary return it
     searchTerm = "umsi"
     if searchTerm in cacheDict:
         print("Using data from cache")
-        
+        fetch = cacheDict[searchTerm]
     # otherwise get the data, add it the dictionary, and write it to a file
     else:
         print("Fetching tweets")
+        fetch = api.search(q = searchTerm)
+        cacheDict[searchTerm] = fetch
 
         # get tweets by the umsi user
         
@@ -32,8 +36,13 @@ def get_tweets(api, cacheDict, fname):
         
         # write out the dictionary as JSON
         
-    # return the data 
-    return cacheDict[searchTerm]
+    #print(json.dumps(fetch, indent = 4 , sort_keys = True))
+    #first = fetch[1]
+    #print(json.dumps(first, indent = 2, sort_keys = True))
+    #print(first.keys())
+    #print('------------------')
+    #print(first['retweet_count'])
+    return fetch
 
 
 ## [PART 2]
@@ -47,7 +56,26 @@ def get_tweets(api, cacheDict, fname):
 ## tweet_text - containing the text that goes with that tweet
 ## retweets - containing the number that represents how many times the tweet has been retweeted
 def setUpTweetTable(tweetList, conn, cur):
-
+	tweet_ids = []
+	tweet_authors = []
+	tweet_times = []
+	tweet_text = []
+	retweet_counts = []
+	counter = 0
+	for tweet in tweetList:
+		counter += 1
+		tweet_ids.append(tweet['id'])
+		user = tweet['user']
+		screen_name = user['screen_name']
+		tweet_authors.append(screen_name)
+		tweet_times.append(tweet['created_at'])
+		tweet_text.append(tweet['text'])
+		retweet_counts.append(tweet['retweet_count'])
+	cur.execute('DROP TABLE IF EXISTS Tweets')
+	cur.execute('CREATE TABLE Tweets(id INTEGER, author TEXT, time_posted TIMESTAMP, tweet_text TEXT, retweets INTEGER)')
+	for x in range(counter):
+		cur.execute('INSERT INTO Tweets(id, author, time_posted, tweet_text, retweets) VALUES (?,?,?,?,?)' , (tweet_ids[x], tweet_authors[x], tweet_times[x], tweet_text[x], retweet_counts[x]))
+	print(cur)
 	pass
 
 ## [PART 3]
@@ -57,7 +85,21 @@ def setUpTweetTable(tweetList, conn, cur):
 # of strings that contain the date/time and text of each tweet in the form: date/time - text as shown below
 # Mon Oct 09 16:02:03 +0000 2017 - #MondayMotivation https://t.co/vLbZpH390b
 def getTimeAndText(cur):
-	
+	time_list = []
+	text_list = []
+	time_and_text_list = []
+	cur.execute('SELECT time_posted FROM Tweets')
+	for times in cur:
+		print(times)
+		#time_list.append(times)
+	cur.execute('SELECT tweet_text FROM Tweets')
+	for text in cur:
+		print(text)
+		#text_list.append(text)
+	count = len(time_list)
+	for x in range(count):
+		time_and_text_list.append(str(time_list[x] + '-' + text_list[x]))
+	print(text_list)
 	pass
 	
 ## [Part 4]
@@ -93,7 +135,7 @@ class TestHW9(unittest.TestCase):
 		except:
 			cacheDict = {}
     		
-		self.conn = sqlite3.connect('/Users/barbarer/Desktop/tweets.sqlite')
+		self.conn = sqlite3.connect('tweets.sqlite')
 		self.cur = self.conn.cursor()
 		self.tweetList = get_tweets(api, cacheDict, fname)
 		
