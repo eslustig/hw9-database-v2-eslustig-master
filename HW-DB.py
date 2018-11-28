@@ -28,20 +28,6 @@ def get_tweets(api, cacheDict, fname):
         fetch = api.search(q = searchTerm)
         cacheDict[searchTerm] = fetch
 
-        # get tweets by the umsi user
-        
-        # get tweets that mention umsi
-        
-        # add both to the dictionary
-        
-        # write out the dictionary as JSON
-        
-    #print(json.dumps(fetch, indent = 4 , sort_keys = True))
-    #first = fetch[1]
-    #print(json.dumps(first, indent = 2, sort_keys = True))
-    #print(first.keys())
-    #print('------------------')
-    #print(first['retweet_count'])
     return fetch
 
 
@@ -75,9 +61,7 @@ def setUpTweetTable(tweetList, conn, cur):
 	cur.execute('CREATE TABLE Tweets(id INTEGER, author TEXT, time_posted TIMESTAMP, tweet_text TEXT, retweets INTEGER)')
 	for x in range(counter):
 		cur.execute('INSERT INTO Tweets(id, author, time_posted, tweet_text, retweets) VALUES (?,?,?,?,?)' , (tweet_ids[x], tweet_authors[x], tweet_times[x], tweet_text[x], retweet_counts[x]))
-	print(cur)
-	pass
-
+	conn.commit()
 ## [PART 3]
 # Finish the function getTimeAndText that returns a list of strings that contain the 
 # time_posted and the text of the tweets.  It takes a database cursor as input.
@@ -85,22 +69,13 @@ def setUpTweetTable(tweetList, conn, cur):
 # of strings that contain the date/time and text of each tweet in the form: date/time - text as shown below
 # Mon Oct 09 16:02:03 +0000 2017 - #MondayMotivation https://t.co/vLbZpH390b
 def getTimeAndText(cur):
-	time_list = []
-	text_list = []
 	time_and_text_list = []
-	cur.execute('SELECT time_posted FROM Tweets')
-	for times in cur:
-		print(times)
-		#time_list.append(times)
-	cur.execute('SELECT tweet_text FROM Tweets')
-	for text in cur:
-		print(text)
-		#text_list.append(text)
-	count = len(time_list)
-	for x in range(count):
-		time_and_text_list.append(str(time_list[x] + '-' + text_list[x]))
-	print(text_list)
-	pass
+	cur.execute('SELECT time_posted, tweet_text FROM Tweets')
+	for tup in cur:
+		time = tup[0]
+		text = tup[1]
+		time_and_text_list.append(time + ' - ' + text)
+	return time_and_text_list
 	
 ## [Part 4]
 # Finish the function getAuthorAndNumRetweets that returns a list of strings for the tweets that have been retweeted MORE than 2 times
@@ -109,9 +84,15 @@ def getTimeAndText(cur):
 # Return a list of strings that are in the form: author - # retweets as shown below
 # umsi - 5
 def getAuthorAndNumRetweets(cur):
-	
-	pass
-		
+	author_retweet_list = []
+	cur.execute('SELECT author, retweets FROM Tweets')
+	for tup in cur:
+		name = tup[0]
+		if tup[1] > 2:
+			over_two = tup[1]
+			author_retweet_list.append(name + ' - ' + str(over_two))
+	return author_retweet_list
+
 ## Unittests to test the functions
 class TestHW9(unittest.TestCase):
 	def setUp(self):
